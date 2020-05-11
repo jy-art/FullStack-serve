@@ -1,10 +1,15 @@
 module.exports = app => {
     const express = require('express')
+    const jwt = require('jsonwebtoken')
+    const assert = require('http-assert')
+    //登录授权中间件
+    const auth = require('../../middleware/auth')
+    const AdminUser = require('../../models/AdminUser')
     const router = express.Router({
       mergeParams:true   //合并url参数
     })
- 
-
+    
+    
     router.post('/',async (req,res) => {
       const model = await  req.Model.create(req.body)
       res.send(model)
@@ -39,7 +44,7 @@ module.exports = app => {
 
 
 
-    app.use('/admin/api/res/:resource',async(req,res,next) => {
+    app.use('/admin/api/res/:resource',auth(),async(req,res,next) => {
       const modelName = require('inflection').classify(req.params.resource)
       req.Model = require(`../../models/${modelName}`)
       next()
@@ -50,10 +55,35 @@ module.exports = app => {
     const path = require('path')
     const multer = require('multer')
     const upload = multer({dest:path.join(__dirname + '/../../uploads')})
-    app.post('/admin/api/upload',upload.single('file'),async(req,res) => {
+    app.post('/admin/api/upload',auth(),upload.single('file'),async(req,res) => {
       const file = req.file
       file.url = `http://localhost:3000/uploads/${file.filename}`
-    
+      
       res.send(file)
     })
+
+    app.post('/admin/api/login',async(req,res) => {
+      const {username,password} = req.body
+      //1.根据用户名找用户
+       
+        const user = await AdminUser.findOne({username}).select('+password')
+
+        assert(user,422,'用户不存在')
+      //2.校验密码
+        const isValid = require('bcrypt').compareSync(password,user.password)
+        assert(isValid,422,'密码错误')
+        
+      //3.返回token
+        const name = user.username
+        const token = jwt.sign({id:user._id},app.get('secre'))
+        res.send({token,name})
+    })
+
+    //错误处理
+    app.use(async(err,req,res,next) => {
+      res.status(err.statusCode || 500).send({
+        message:err.message
+      })
+    })
+
 }
