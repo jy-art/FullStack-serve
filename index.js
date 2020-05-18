@@ -13,6 +13,7 @@ app.use('/uploads',express.static(path.join(__dirname + '/uploads')))
 
 require('./routers/admin')(app)
 require('./plugins/db')(app)
+require('./web/index')(app)
 
 app.listen(3000, () => {
     console.log('http://localhost:3000');

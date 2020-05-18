@@ -32,7 +32,7 @@ module.exports = app => {
       if(req.Model.modelName === 'Category'){
         quryOptions.populate ='parent'
       }
-      const items = await  req.Model.find().setOptions(quryOptions).limit(10)
+      const items = await  req.Model.find().setOptions(quryOptions).limit(100)
       res.send(items)
     })
 
@@ -53,6 +53,7 @@ module.exports = app => {
 
 
     const path = require('path')
+    //处理上传数据
     const multer = require('multer')
     const upload = multer({dest:path.join(__dirname + '/../../uploads')})
     app.post('/admin/api/upload',auth(),upload.single('file'),async(req,res) => {
